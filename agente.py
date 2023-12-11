@@ -18,7 +18,6 @@ lastVisited = []
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
 lastZone = []
 
-
 def work(posicao, bateria, objetos):
     # esta função é invocada em cada ciclo de clock
     # e pode servir para armazenar informação recolhida pelo agente
@@ -40,46 +39,42 @@ def work(posicao, bateria, objetos):
     if len(objetos) == 1:
         for zona in zonas:
             if zona in objetos[0]:
-                if len(lastZone) == 1:
-                    lastZone.pop(0)
-                    lastZone.append(zona)
+                if [30, 165] >= posicao >= [485, 185] or [30, 165] >= posicao >= [135, 435] or [30, 380] >= posicao >= [635, 435] or [530,230] >= posicao >= [635, 435]:
+                    print("Estou no corredor.")
                 else:
-                    lastZone.append(zona)
-
+                    if len(lastZone)==1:
+                        lastZone.pop(0)
+                        lastZone.append(zona)
+                    else:
+                        lastZone.append(zona)
 
 def resp1():
-    if len(lastVisited) == 2:
-        print(lastVisited[0])
+    if len(lastVisited)==2:
+        print("A penúltima pessoa foi o " + lastVisited[0] + ".")
     else:
-        print("Não ha penultima pessoa")
+        print("Não há penúltima pessoa.")
 
 
 def resp2():
-    if len(lastZone) == 1:
-        print(lastZone[0])
+    if len(lastZone)==1:
+        print("Estou na/no " + lastZone[0] + ".")
     else:
-        print("nao ha ultima zona")
-
+        print("Não há última zona.")
 
 def resp3():
     pass
 
-
 def resp4():
     pass
-
 
 def resp5():
     pass
 
-
 def resp6():
     pass
 
-
 def resp7():
     pass
-
 
 def resp8():
     pass
