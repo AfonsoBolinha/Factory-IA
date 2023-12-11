@@ -29,7 +29,7 @@ def work(posicao, bateria, objetos):
     # podem achar o tempo atual usando, p.ex.
     # time.time()
     if len(objetos) == 1:
-        if objetos[0][-1]!='a':
+        if (objetos[0][-1]!='a') and (("visitante" in objetos[0]) or ("operário" in objetos[0]) or (("supervisor" in objetos[0]))):
             if len(lastVisited) == 2:
                 if lastVisited[1] != objetos[0]:
                     lastVisited.pop(0)
