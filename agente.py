@@ -12,11 +12,30 @@ Afonso Martins, 45838
 """
 import time
 
-nomesM = ["Ricardo", "Paulo", "Adérito", "Rui", "Miguel", "Paulo", "Fábio", "Carlos", "Joaquim"]
+# Corredores
+divisao1 = [(30,165),(135,350)]
+divisao2 = [(165,165),(485,185)]
+divisao3 = [(30,380),(500,435)]
+divisao4 = [(530,215),(635,435)]
+
+# Divisões
+divisao5 = [(30,30),(135,135)]
+divisao6 = [(530,230),(635,435)]
+divisao7 = [(530,230),(635,435)]
+divisao8 = [(530,230),(635,435)]
+divisao9 = [(530,230),(635,435)]
+divisao10 = [(665,330),(770,385)]
+divisao11 = [(530,230),(635,435)]
+divisao12 = [(530,230),(635,435)]
+divisao13 = [(530,230),(635,435)]
+divisao14 = [(530,230),(635,435)]
+
 lastVisited = []
 
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
 lastZone = []
+
+posicaoGlobal = []
 
 def work(posicao, bateria, objetos):
     # esta função é invocada em cada ciclo de clock
@@ -27,6 +46,10 @@ def work(posicao, bateria, objetos):
     # objetos = o nome do(s) objeto(s) próximos do agente, uma string
     # podem achar o tempo atual usando, p.ex.
     # time.time()
+
+    global posicaoGlobal
+    posicaoGlobal = posicao
+
     if len(objetos) == 1:
         if (objetos[0][-1]!='a') and (("visitante" in objetos[0]) or ("operário" in objetos[0]) or (("supervisor" in objetos[0]))):
             if len(lastVisited) == 2:
@@ -39,14 +62,11 @@ def work(posicao, bateria, objetos):
     if len(objetos) == 1:
         for zona in zonas:
             if zona in objetos[0]:
-                if [30, 165] >= posicao >= [485, 185] or [30, 165] >= posicao >= [135, 435] or [30, 380] >= posicao >= [635, 435] or [530,230] >= posicao >= [635, 435]:
-                    print("Estou no corredor.")
+                if len(lastZone)==1:
+                    lastZone.pop(0)
+                    lastZone.append(zona)
                 else:
-                    if len(lastZone)==1:
-                        lastZone.pop(0)
-                        lastZone.append(zona)
-                    else:
-                        lastZone.append(zona)
+                    lastZone.append(zona)
 
 def resp1():
     if len(lastVisited)==2:
@@ -56,10 +76,17 @@ def resp1():
 
 
 def resp2():
-    if len(lastZone)==1:
-        print("Estou na/no " + lastZone[0] + ".")
+    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao1, divisao2, divisao3, divisao4]):
+        print("Estou no corredor.")
+    elif any(start[0] <= posicaoGlobal[0] <= end[0] for start, end in [divisao10]):
+        print("Estou na entrada da fábrica.")
     else:
-        print("Não há última zona.")
+        if lastZone:
+            print("Estou na/no " + lastZone[0] + ".")
+        else:
+            print("Não há última zona.")
+            print(posicaoGlobal)
+
 
 def resp3():
     pass
