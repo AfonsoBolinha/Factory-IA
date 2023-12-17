@@ -70,10 +70,9 @@ def work(posicao, bateria, objetos):
            [divisao1, divisao2, divisao3, divisao4]):
         lastZone.clear()
 
-    # Pergunta 3
-
 
 def resp1():
+    # 1. Qual foi a penúltima pessoa do sexo masculino que viste?
     if len(lastVisited) == 2:
         print("A penúltima pessoa foi o " + lastVisited[0] + ".")
     else:
@@ -81,22 +80,20 @@ def resp1():
 
 
 def resp2():
-    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in
-           [divisao1, divisao2, divisao3, divisao4]):
+    # 2. Em que tipo de zona estás agora?
+    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao1, divisao2, divisao3, divisao4]):
         print("Estou no corredor.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] for start, end in [divisao10]):
+    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <=end[1] for start, end in [divisao10]):
         print("Estou na entrada da fábrica.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in
-             [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14]):
+    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14]):
         if len(lastZone) == 1:
-            print("Estou na " + lastZone[0] + ".")
+            print("Estou na/no " + lastZone[0] + ".")
         else:
             print("Estou numa zona multitarefa.")
 
 
 def resp3():
     pass
-
 
 def resp4():
     pass
