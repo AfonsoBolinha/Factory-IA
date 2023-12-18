@@ -7,10 +7,10 @@ Afonso Martins, 45838
 import time
 
 # Corredores
-divisao1 = [(30, 165), (135, 350)]
-divisao2 = [(165, 165), (485, 185)]
-divisao3 = [(30, 380), (500, 435)]
-divisao4 = [(530, 215), (635, 435)]
+corredor1 = [(30, 165), (135, 350)]
+corredor2 = [(165, 165), (485, 185)]
+corredor3 = [(30, 380), (500, 435)]
+corredor4 = [(530, 215), (635, 435)]
 
 # Divisões
 divisao5 = [(30, 30), (135, 135)]
@@ -24,13 +24,51 @@ divisao12 = [(330, 465), (485, 570)]
 divisao13 = [(180, 465), (285, 570)]
 divisao14 = [(30, 465), (135, 570)]
 
-lastVisited = []
-
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
-lastZone = []
 
+lastVisited = []
+lastZone = []
 posicaoGlobal = []
 
+divisao_names = {
+    tuple(divisao5): "Zona Multiuso",
+    tuple(divisao6): "Zona Multiuso",
+    tuple(divisao7): "Zona Multiuso",
+    tuple(divisao8): "Zona Multiuso",
+    tuple(divisao9): "Zona Multiuso",
+    tuple(divisao10): "Zona Multiuso",
+    tuple(divisao11): "Zona Multiuso",
+    tuple(divisao12): "Zona Multiuso",
+    tuple(divisao13): "Zona Multiuso",
+    tuple(divisao14): "Zona Multiuso"
+}
+
+def pergunta1(objetos):
+    global lastVisited
+    if len(objetos) == 1:
+        if (objetos[0][-1] != 'a') and (
+                ("visitante" in objetos[0]) or ("operário" in objetos[0]) or (("supervisor" in objetos[0]))):
+            if len(lastVisited) == 2:
+                if lastVisited[1] != objetos[0]:
+                    lastVisited.pop(0)
+                    lastVisited.append(objetos[0])
+            else:
+                lastVisited.append(objetos[0])
+
+def pergunta2(objetos):
+    global lastZone, zonas
+    if len(objetos) == 1:
+        for zona in zonas:
+            if zona in objetos[0]:
+                if len(lastZone) == 1:
+                    lastZone.pop(0)
+                    lastZone.append(zona)
+                else:
+                    lastZone.append(zona)
+
+def pergunta3():
+    print("Pergunta 3")
+    pass
 
 def work(posicao, bateria, objetos):
     # esta função é invocada em cada ciclo de clock
@@ -45,29 +83,13 @@ def work(posicao, bateria, objetos):
     global posicaoGlobal
     posicaoGlobal = posicao
 
-    # Pergunta 1
-    if len(objetos) == 1:
-        if (objetos[0][-1] != 'a') and (
-                ("visitante" in objetos[0]) or ("operário" in objetos[0]) or (("supervisor" in objetos[0]))):
-            if len(lastVisited) == 2:
-                if lastVisited[1] != objetos[0]:
-                    lastVisited.pop(0)
-                    lastVisited.append(objetos[0])
-            else:
-                lastVisited.append(objetos[0])
+    #1
+    pergunta1(objetos)
 
-    # Pergunta 2
-    if len(objetos) == 1:
-        for zona in zonas:
-            if zona in objetos[0]:
-                if len(lastZone) == 1:
-                    lastZone.pop(0)
-                    lastZone.append(zona)
-                else:
-                    lastZone.append(zona)
-
+    #2
+    pergunta2(objetos)
     if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in
-           [divisao1, divisao2, divisao3, divisao4]):
+           [corredor1, corredor2, corredor3, corredor4]):
         lastZone.clear()
 
 
@@ -80,17 +102,20 @@ def resp1():
 
 
 def resp2():
+    global lastZone
     # 2. Em que tipo de zona estás agora?
-    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao1, divisao2, divisao3, divisao4]):
+    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [corredor1, corredor2, corredor3, corredor4]):
         print("Estou no corredor.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <=end[1] for start, end in [divisao10]):
+    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao10]):
         print("Estou na entrada da fábrica.")
     elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14]):
         if len(lastZone) == 1:
             print("Estou na/no " + lastZone[0] + ".")
-        else:
-            print("Estou numa zona multitarefa.")
-
+        for coords, name in divisao_names.items():
+            start, end = coords  # Unpack coordinates
+            if start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1]:
+                # Find the name of the current divisao and update the current divisao_names to the name of the lastZone[0]
+                divisao_names[coords] = lastZone[0]
 
 def resp3():
     pass
