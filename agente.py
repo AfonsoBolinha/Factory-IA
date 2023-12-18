@@ -23,6 +23,7 @@ divisao11 = [(530, 465), (770, 570)]
 divisao12 = [(330, 465), (485, 570)]
 divisao13 = [(180, 465), (285, 570)]
 divisao14 = [(30, 465), (135, 570)]
+divisao15 = [(160, 230), (485, 335)]
 
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
 
@@ -30,18 +31,6 @@ lastVisited = []
 lastZone = []
 posicaoGlobal = []
 
-divisao_names = {
-    tuple(divisao5): "Zona Multiuso",
-    tuple(divisao6): "Zona Multiuso",
-    tuple(divisao7): "Zona Multiuso",
-    tuple(divisao8): "Zona Multiuso",
-    tuple(divisao9): "Zona Multiuso",
-    tuple(divisao10): "Zona Multiuso",
-    tuple(divisao11): "Zona Multiuso",
-    tuple(divisao12): "Zona Multiuso",
-    tuple(divisao13): "Zona Multiuso",
-    tuple(divisao14): "Zona Multiuso"
-}
 
 def pergunta1(objetos):
     global lastVisited
@@ -102,20 +91,16 @@ def resp1():
 
 
 def resp2():
-    global lastZone
     # 2. Em que tipo de zona estás agora?
+    global lastZone
     if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [corredor1, corredor2, corredor3, corredor4]):
         print("Estou no corredor.")
     elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao10]):
         print("Estou na entrada da fábrica.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14]):
+    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14, divisao15]):
         if len(lastZone) == 1:
             print("Estou na/no " + lastZone[0] + ".")
-        for coords, name in divisao_names.items():
-            start, end = coords  # Unpack coordinates
-            if start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1]:
-                # Find the name of the current divisao and update the current divisao_names to the name of the lastZone[0]
-                divisao_names[coords] = lastZone[0]
+
 
 def resp3():
     pass
