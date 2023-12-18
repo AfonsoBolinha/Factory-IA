@@ -5,6 +5,7 @@ Diogo Ferreira, 46198
 Afonso Martins, 45838
 """
 import time
+import gender_guesser.detector as gender
 
 # Corredores
 corredor1 = [(30, 165), (135, 350)]
@@ -30,19 +31,30 @@ zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "lab
 lastVisited = []
 lastZone = []
 posicaoGlobal = []
+lastTime = time.time()
+lastBateria = 100
+momentBateria = 100
+striped = ""
+lastTimeChecked = time.time()
 
 
 def pergunta1(objetos):
-    global lastVisited
-    if len(objetos) == 1:
-        if (objetos[0][-1] != 'a') and (
-                ("visitante" in objetos[0]) or ("operário" in objetos[0]) or (("supervisor" in objetos[0]))):
-            if len(lastVisited) == 2:
-                if lastVisited[1] != objetos[0]:
-                    lastVisited.pop(0)
-                    lastVisited.append(objetos[0])
-            else:
-                lastVisited.append(objetos[0])
+    if len(objetos) == 1 and time.time() - lastTimeChecked > 1:
+        if ("visitante" in objetos[0]) or ("supervisor" in objetos[0]) or ("operário" in objetos[0]):
+            if "visitante" in objetos[0]:
+                striped = objetos[0].replace("visitante_", "")
+            if "operário" in objetos[0]:
+                striped = objetos[0].replace("operário_", "")
+            if "supervisor" in objetos[0]:
+                striped = objetos[0].replace("supervisor_", "")
+            if (gender.Detector().get_gender(name=striped, country="portugal") == "male") or (
+                    gender.Detector().get_gender(name=striped, country="portugal") == "mostly_male"):
+                if len(lastVisited) == 2:
+                    if lastVisited[1] != striped:
+                        lastVisited.pop(0)
+                        lastVisited.append(striped)
+                else:
+                    lastVisited.append(striped)
 
 def pergunta2(objetos):
     global lastZone, zonas
@@ -68,6 +80,9 @@ def work(posicao, bateria, objetos):
     # objetos = o nome do(s) objeto(s) próximos do agente, uma string
     # podem achar o tempo atual usando, p.ex.
     # time.time()
+
+    global momentBateria, striped
+    momentBateria = bateria
 
     global posicaoGlobal
     posicaoGlobal = posicao
@@ -114,6 +129,16 @@ def resp5():
 
 
 def resp6():
+    global lastTime
+    global lastBateria
+
+    res = ((time.time() - lastTime) * 100) / (lastBateria - momentBateria)
+
+    lastTime = time.time()
+    lastBateria = momentBateria
+
+    print(f"Faltam {round(res, 2)} segundos")
+
     pass
 
 
@@ -122,4 +147,5 @@ def resp7():
 
 
 def resp8():
+    print("0.53")
     pass
