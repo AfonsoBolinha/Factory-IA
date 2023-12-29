@@ -4,30 +4,37 @@ agente.py
 Diogo Ferreira, 46198
 Afonso Martins, 45838
 """
+# Imports
 import time
 import gender_guesser.detector as gender
 
-# Corredores
-corredor1 = [(30, 165), (135, 350)]
-corredor2 = [(165, 165), (485, 185)]
-corredor3 = [(30, 380), (500, 435)]
-corredor4 = [(530, 215), (635, 435)]
+# Definir os Corredores e as divisões
+corredor1 = [(30, 165), (135, 350), "corredor 1"]
+corredor2 = [(165, 165), (485, 185), "corredor 2"]
+corredor3 = [(30, 380), (500, 435), "corredor 3"]
+corredor4 = [(530, 215), (635, 435), "corredor 4"]
+divisao5 = [(30, 30), (135, 135), "multiusos"]
+divisao6 = [(180, 30), (285, 135), "multiusos"]
+divisao7 = [(330, 30), (485, 135), "multiusos"]
+divisao8 = [(530, 30), (770, 185), "multiusos"]
+divisao9 = [(665, 230), (770, 285), "multiusos"]
+divisao10 = [(665, 330), (770, 385), "entrada da fábrica"]
+divisao11 = [(530, 465), (770, 570), "multiusos"]
+divisao12 = [(330, 465), (485, 570), "multiusos"]
+divisao13 = [(180, 465), (285, 570), "multiusos"]
+divisao14 = [(30, 465), (135, 570), "multiusos"]
+divisao15 = [(160, 230), (485, 335), "multiusos"]
 
-# Divisões
-divisao5 = [(30, 30), (135, 135)]
-divisao6 = [(180, 30), (285, 135)]
-divisao7 = [(330, 30), (485, 135)]
-divisao8 = [(530, 30), (770, 185)]
-divisao9 = [(665, 230), (770, 285)]
-divisao10 = [(665, 330), (770, 385)]
-divisao11 = [(530, 465), (770, 570)]
-divisao12 = [(330, 465), (485, 570)]
-divisao13 = [(180, 465), (285, 570)]
-divisao14 = [(30, 465), (135, 570)]
-divisao15 = [(160, 230), (485, 335)]
+# Definir todas as localizações
+all_locations = [corredor1, corredor2, corredor3, corredor4,
+                     divisao5, divisao6, divisao7, divisao8,
+                     divisao9, divisao10, divisao11, divisao12,
+                     divisao13, divisao14, divisao15]
 
+# Definir as zonas
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
 
+# Definir as variáveis globais
 lastVisited = []
 lastZone = []
 posicaoGlobal = []
@@ -36,6 +43,14 @@ lastBateria = 100
 momentBateria = 100
 striped = ""
 lastTimeChecked = time.time()
+
+
+# Saber a localização atual, com base na posição do agente
+def get_current_location(position):
+    for start, end, nome in all_locations:
+        if start[0] <= position[0] <= end[0] and start[1] <= position[1] <= end[1]:
+            return nome
+    return ""
 
 
 def pergunta1(objetos):
@@ -56,6 +71,7 @@ def pergunta1(objetos):
                 else:
                     lastVisited.append(striped)
 
+
 def pergunta2(objetos):
     global lastZone, zonas
     if len(objetos) == 1:
@@ -67,9 +83,11 @@ def pergunta2(objetos):
                 else:
                     lastZone.append(zona)
 
+
 def pergunta3():
-    print("Pergunta 3")
+    # 3. Qual o caminho para a zona de empacotamento?
     pass
+
 
 def work(posicao, bateria, objetos):
     # esta função é invocada em cada ciclo de clock
@@ -87,13 +105,12 @@ def work(posicao, bateria, objetos):
     global posicaoGlobal
     posicaoGlobal = posicao
 
-    #1
-    pergunta1(objetos)
+    # 1
+    # pergunta1(objetos)
 
-    #2
+    # 2
     pergunta2(objetos)
-    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in
-           [corredor1, corredor2, corredor3, corredor4]):
+    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [corredor1, corredor2, corredor3, corredor4]):
         lastZone.clear()
 
 
@@ -106,19 +123,50 @@ def resp1():
 
 
 def resp2():
-    # 2. Em que tipo de zona estás agora?
-    global lastZone
-    if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [corredor1, corredor2, corredor3, corredor4]):
-        print("Estou no corredor.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao10]):
-        print("Estou na entrada da fábrica.")
-    elif any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end in [divisao5, divisao6, divisao7, divisao8, divisao9, divisao11, divisao12, divisao13, divisao14, divisao15]):
+    # 2. Em que zona te encontras?
+    current_location = get_current_location(posicaoGlobal)
+
+    if current_location:
         if len(lastZone) == 1:
-            print("Estou na/no " + lastZone[0] + ".")
+            current_location = lastZone[0]
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao5]):
+                divisao5[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao6]):
+                divisao6[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao7]):
+                divisao7[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao8]):
+                divisao8[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao9]):
+                divisao9[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao10]):
+                divisao10[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao11]):
+                divisao11[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao12]):
+                divisao12[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao13]):
+                divisao13[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao14]):
+                divisao14[2] = current_location
+            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao15]):
+                divisao15[2] = current_location
+
+    print(f"Estou na/no {current_location}.")
 
 
 def resp3():
-    pass
+    # 3. Qual o caminho para a zona de empacotamento?
+    empacotamento_division = next((div for div in all_locations if "empacotamento" in div[2]), None)
+
+    if empacotamento_division:
+        if get_current_location(posicaoGlobal) == empacotamento_division[2]:
+            print("Já cá estou bro.")
+        else:
+            print("Not there lol.")
+    else:
+        print("Ainda não sei onde se encontra a zona de empacotamento.")
+
 
 def resp4():
     pass
