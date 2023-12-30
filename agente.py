@@ -7,23 +7,24 @@ Afonso Martins, 45838
 # Imports
 import time
 import gender_guesser.detector as gender
+import heapq
 
 # Definir os Corredores e as divisões
 corredor1 = [(30, 165), (135, 350), "corredor 1"]
 corredor2 = [(165, 165), (485, 185), "corredor 2"]
 corredor3 = [(30, 380), (500, 435), "corredor 3"]
 corredor4 = [(530, 215), (635, 435), "corredor 4"]
-divisao5 = [(30, 30), (135, 135), "multiusos"]
-divisao6 = [(180, 30), (285, 135), "multiusos"]
-divisao7 = [(330, 30), (485, 135), "multiusos"]
-divisao8 = [(530, 30), (770, 185), "multiusos"]
-divisao9 = [(665, 230), (770, 285), "multiusos"]
+divisao5 = [(30, 30), (135, 135), "multiusos 5"]
+divisao6 = [(180, 30), (285, 135), "multiusos 6"]
+divisao7 = [(330, 30), (485, 135), "multiusos 7"]
+divisao8 = [(530, 30), (770, 185), "multiusos 8"]
+divisao9 = [(665, 230), (770, 285), "multiusos 9"]
 divisao10 = [(665, 330), (770, 385), "entrada da fábrica"]
-divisao11 = [(530, 465), (770, 570), "multiusos"]
-divisao12 = [(330, 465), (485, 570), "multiusos"]
-divisao13 = [(180, 465), (285, 570), "multiusos"]
-divisao14 = [(30, 465), (135, 570), "multiusos"]
-divisao15 = [(160, 230), (485, 335), "multiusos"]
+divisao11 = [(530, 465), (770, 570), "multiusos 11"]
+divisao12 = [(330, 465), (485, 570), "multiusos 12"]
+divisao13 = [(180, 465), (285, 570), "multiusos 13"]
+divisao14 = [(30, 465), (135, 570), "multiusos 14"]
+divisao15 = [(160, 230), (485, 335), "multiusos 15"]
 
 # Definir todas as localizações
 all_locations = [corredor1, corredor2, corredor3, corredor4,
@@ -53,6 +54,82 @@ def get_current_location(position):
     return ""
 
 
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def build_graph(locations):
+    graph = {}
+
+    for start, end, _ in locations:
+        if start not in graph:
+            graph[start] = []
+        if end not in graph:
+            graph[end] = []
+
+        graph[start].append((end, 1))
+        graph[end].append((start, 1))
+
+    return graph
+
+
+def find_path(graph, start, goal, locations):
+    frontier = []
+    heapq.heappush(frontier, (0, start))
+
+    came_from = {}
+    cost_so_far = {}
+
+    came_from[start] = None
+    cost_so_far[start] = 0
+
+    goal_location = locations[goal]
+
+    while frontier:
+        _, current = heapq.heappop(frontier)
+
+        if current == goal:
+            break
+
+        current_location_index = None
+        for i, (start, end, nome) in enumerate(locations):
+            if start[0] == current[0] and start[1] == current[1] and end[0] == current[0] and end[1] == current[1]:
+                current_location_index = i
+                break
+
+        if current_location_index is None:
+            continue
+
+        current_location = locations[current_location_index]
+
+        if current_location not in graph:
+            continue
+
+        for next, cost in graph[current_location]:
+            new_cost = cost_so_far[current] + cost
+
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + heuristic(goal_location[0], next)
+                heapq.heappush(frontier, (priority, next))
+                came_from[next] = current
+
+    if goal not in came_from:
+        return None
+
+    path = []
+    current = goal
+
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+
+    path.append(start)
+    path.reverse()
+
+    return path
+
+
 def pergunta1(objetos):
     if len(objetos) == 1 and time.time() - lastTimeChecked > 1:
         if ("visitante" in objetos[0]) or ("supervisor" in objetos[0]) or ("operário" in objetos[0]):
@@ -67,6 +144,9 @@ def pergunta1(objetos):
                 if len(lastVisited) == 2:
                     if lastVisited[1] != striped:
                         lastVisited.pop(0)
+                        lastVisited.append(striped)
+                elif len(lastVisited) == 1:
+                    if lastVisited[0] != striped:
                         lastVisited.append(striped)
                 else:
                     lastVisited.append(striped)
@@ -106,7 +186,7 @@ def work(posicao, bateria, objetos):
     posicaoGlobal = posicao
 
     # 1
-    # pergunta1(objetos)
+    pergunta1(objetos)
 
     # 2
     pergunta2(objetos)
@@ -156,16 +236,46 @@ def resp2():
 
 
 def resp3():
-    # 3. Qual o caminho para a zona de empacotamento?
-    empacotamento_division = next((div for div in all_locations if "empacotamento" in div[2]), None)
+    empacotamento_location = "empacotamento"
+    current_location = get_current_location(posicaoGlobal)
 
-    if empacotamento_division:
-        if get_current_location(posicaoGlobal) == empacotamento_division[2]:
-            print("Já cá estou bro.")
-        else:
-            print("Not there lol.")
-    else:
+    if empacotamento_location not in [nome for _, _, nome in all_locations]:
         print("Ainda não sei onde se encontra a zona de empacotamento.")
+        return
+
+    if current_location:
+        if current_location != empacotamento_location:
+            graph = build_graph(all_locations)
+
+            # Encontrar os índices de current_location e empacotamento_location
+            current_index = [i for i, (_, _, nome) in enumerate(all_locations) if nome == current_location]
+            goal_index = [i for i, (_, _, nome) in enumerate(all_locations) if nome == empacotamento_location]
+
+            print(f"Current Index: {current_index}")
+            print(f"Goal Index: {goal_index}")
+
+            if current_index and goal_index:
+                # Use o primeiro elemento das listas, já que deve haver apenas uma correspondência
+                current_index = current_index[0]
+                goal_index = goal_index[0]
+
+                print(f"Current Index: {current_index}")
+                print(f"Goal Index: {goal_index}")
+
+                # Adicionar o argumento locations à chamada da função
+                path = find_path(graph, current_location, goal_index, all_locations)
+
+                if path:
+                    print(f"Caminho para a zona de empacotamento: {path}")
+                else:
+                    print("Não foi possível encontrar um caminho para a zona de empacotamento.")
+            else:
+                print("Erro ao obter os índices das localizações.")
+        else:
+            print("Já estou na zona de empacotamento.")
+    else:
+        print("Não consigo determinar a localização atual.")
+
 
 
 def resp4():
@@ -177,23 +287,50 @@ def resp5():
 
 
 def resp6():
+    # 6. Quanto tempo achas que falta até ficares sem bateria?
     global lastTime
     global lastBateria
 
-    res = ((time.time() - lastTime) * 100) / (lastBateria - momentBateria)
+    # Calcular a taxa de descarga
+    descarga = ((time.time() - lastTime) * 100) / (lastBateria - momentBateria)
 
+    # Atualizar os valores
     lastTime = time.time()
     lastBateria = momentBateria
 
-    print(f"Faltam {round(res, 2)} segundos")
-
-    pass
+    # Calcular e imprimir o tempo restante
+    tempo_restante = descarga * momentBateria / 100
+    print(f"Faltam aproximadamente {round(tempo_restante, 2)} segundos até ficar sem bateria.")
 
 
 def resp7():
-    pass
+    # 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
+    total_pessoas = len(lastVisited)
+
+    if total_pessoas > 0:
+        supervisores = sum(1 for pessoa in lastVisited if "supervisor" in pessoa)
+        probabilidade_supervisor = supervisores / total_pessoas
+        print(f"A probabilidade da próxima pessoa ser um supervisor é aproximadamente {round(probabilidade_supervisor * 100, 2)}%.")
+    else:
+        print("Não há pessoas suficientes para calcular a probabilidade.")
+
 
 
 def resp8():
-    print("0.53")
-    pass
+    # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
+    # Obter a localização atual do agente
+    current_location = get_current_location(posicaoGlobal)
+
+    if current_location:
+        # Verificar se há uma máquina e nenhum supervisor na zona
+        maquina_presente = any("máquina" in objetos for objetos in current_location)
+        supervisor_presente = any("supervisor" in objetos for objetos in current_location)
+
+        if maquina_presente and not supervisor_presente:
+            # Calcular a probabilidade de encontrar um operário
+            probabilidade_operario = sum(1 for pessoa in lastVisited if "operário" in pessoa) / len(lastVisited)
+            print(f"A probabilidade de encontrar um operário na zona é aproximadamente {round(probabilidade_operario * 100, 2)}%.")
+        else:
+            print("Não há máquina ou há um supervisor na zona.")
+    else:
+        print("Não foi possível determinar a localização atual.")
