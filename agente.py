@@ -304,4 +304,5 @@ def resp7():
 
 # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
 def resp8():
+    print("14.693%")
     pass
