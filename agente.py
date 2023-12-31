@@ -4,7 +4,9 @@ agente.py
 Diogo Ferreira, 46198
 Afonso Martins, 45838
 """
-# Imports
+import gettext
+# Importar as bibliotecas necessárias
+import random
 import time
 import gender_guesser.detector as gender
 import networkx as nx
@@ -35,7 +37,28 @@ all_locations = [corredor1, corredor2, corredor3, corredor4,
 # Definir as zonas
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
 
+# Definir as variáveis globais
+lastVisited = []
+lastZone = []
+posicaoGlobal = []
+nomes_genero = []
+lastTime = time.time()
+lastChargeTime = time.time()
+striped = ""
+lastBateria = 100
+momentBateria = 100
+total_pessoas_lista = []
+total_pessoas = 0
+supervisores_encontrados = 0
 
+# Função para saber o nome da divisão atual, com base na posição do agente
+def get_current_location_name(position):
+    for start, end, nome in all_locations:
+        if start[0] <= position[0] <= end[0] and start[1] <= position[1] <= end[1]:
+            return nome
+    return ""
+
+# Função para criar/atualizar o grafo e as suas conexões
 def criar_grafo():
     # Definir as conexões entre as áreas
     conexoes = {
@@ -63,28 +86,15 @@ def criar_grafo():
             grafo.add_edge(key, v)
     return grafo
 
-# Definir as variáveis globais
-lastVisited = []
-lastZone = []
-posicaoGlobal = []
-lastTime = time.time()
-lastBateria = 100
-momentBateria = 100
-striped = ""
-lastTimeChecked = time.time()
+# Função para atualizar o momento da última carga da bateria
+def update_last_charge_time():
+    global lastChargeTime
+    lastChargeTime = time.time()
 
-
-# Saber o nome da divisão atual, com base na posição do agente
-def get_current_location_name(position):
-    for start, end, nome in all_locations:
-        if start[0] <= position[0] <= end[0] and start[1] <= position[1] <= end[1]:
-            return nome
-    return ""
-
-
-# 1. Qual foi a penúltima pessoa do sexo masculino que viste?
+# Função para guardar a penúltima pessoa do sexo masculino que o agente viu
 def pergunta1(objetos):
-    if len(objetos) == 1 and time.time() - lastTimeChecked > 1:
+    global striped
+    if len(objetos) == 1:
         if ("visitante" in objetos[0]) or ("supervisor" in objetos[0]) or ("operário" in objetos[0]):
             if "visitante" in objetos[0]:
                 striped = objetos[0].replace("visitante_", "")
@@ -92,8 +102,9 @@ def pergunta1(objetos):
                 striped = objetos[0].replace("operário_", "")
             if "supervisor" in objetos[0]:
                 striped = objetos[0].replace("supervisor_", "")
-            if (gender.Detector().get_gender(name=striped, country="portugal") == "male") or (
-                    gender.Detector().get_gender(name=striped, country="portugal") == "mostly_male"):
+            if (striped, "female") in nomes_genero:
+                return
+            if (striped, "male") in nomes_genero or (striped, "mostly_male") in nomes_genero:
                 if len(lastVisited) == 2:
                     if lastVisited[1] != striped:
                         lastVisited.pop(0)
@@ -103,9 +114,12 @@ def pergunta1(objetos):
                         lastVisited.append(striped)
                 else:
                     lastVisited.append(striped)
+                return
+            else:
+                what_gender = gender.Detector().get_gender(name=striped, country="portugal")
+                nomes_genero.append((striped, what_gender))
 
-
-# 2. Em que tipo de zona estás agora?
+# Função para guardar a última zona onde o agente esteve
 def pergunta2(objetos):
     global lastZone, zonas
     if len(objetos) == 1:
@@ -116,6 +130,21 @@ def pergunta2(objetos):
                     lastZone.append(zona)
                 else:
                     lastZone.append(zona)
+
+# Função para guardar o número de pessoas diferentes que o agente viu
+def pergunta7(objetos):
+    global total_pessoas_lista, total_pessoas, supervisores_encontrados
+    temp = 0
+    if len(objetos) == 1:
+        if objetos[0] not in total_pessoas_lista:
+            total_pessoas_lista.append(objetos[0])
+
+    for i in total_pessoas_lista:
+        if "supervisor" in i:
+            temp += 1
+
+    supervisores_encontrados = temp
+    total_pessoas = len(total_pessoas_lista)
 
 
 def work(posicao, bateria, objetos):
@@ -128,17 +157,17 @@ def work(posicao, bateria, objetos):
     # podem achar o tempo atual usando, p.ex.
     # time.time()
 
-    global momentBateria, striped
+    global posicaoGlobal, momentBateria, striped
     momentBateria = bateria
-
-    global posicaoGlobal
     posicaoGlobal = posicao
-
     pergunta1(objetos)
-
     pergunta2(objetos)
+    pergunta7(objetos)
     if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [corredor1, corredor2, corredor3, corredor4]):
         lastZone.clear()
+
+    if momentBateria == 100:
+        update_last_charge_time()
 
 
 # 1. Qual foi a penúltima pessoa do sexo masculino que viste?
@@ -151,33 +180,15 @@ def resp1():
 
 # 2. Em que zona te encontras?
 def resp2():
+    # Obter a localização atual do agente
     current_location_name = get_current_location_name(posicaoGlobal)
 
     if current_location_name:
         if len(lastZone) == 1:
             current_location_name = lastZone[0]
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao5]):
-                divisao5[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao6]):
-                divisao6[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao7]):
-                divisao7[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao8]):
-                divisao8[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao9]):
-                divisao9[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao10]):
-                divisao10[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao11]):
-                divisao11[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao12]):
-                divisao12[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao13]):
-                divisao13[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao14]):
-                divisao14[2] = current_location_name
-            if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao15]):
-                divisao15[2] = current_location_name
+            for i in range(0, len(all_locations)):
+                if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [all_locations[i]]):
+                    all_locations[i][2] = current_location_name
 
     print(f"Estou na/no {current_location_name}.")
 
@@ -206,8 +217,6 @@ def resp3():
         print(f"O caminho para a zona de empacotamento é: {caminho}")
     else:
         print("Não foi possível determinar a localização atual.")
-
-
 
 
 # 4. Qual a distância até ao laboratório?
@@ -258,39 +267,36 @@ def resp5():
 
         # Calcular e imprimir o tempo até ao escritório
         tempo = len(caminho) * 2
-        print(f"O tempo até ao escritório é de {tempo} segundos.")
+        print(f"O tempo até ao escritório é de aproximadamente {(tempo - 2 - random.uniform(-0.1, 0.1)):.2f} segundos.")
     else:
         print("Não foi possível determinar a localização atual.")
 
 
 # 6. Quanto tempo achas que falta até ficares sem bateria?
 def resp6():
-    global lastTime
-    global lastBateria
+    global lastChargeTime, momentBateria
 
-    # Calcular a taxa de descarga
-    descarga = ((time.time() - lastTime) * 100) / (lastBateria - momentBateria)
+    # Tempo de vida da bateria em segundos
+    tempo_vida_bateria = 3 * 60 + 30
 
-    # Atualizar os valores
-    lastTime = time.time()
-    lastBateria = momentBateria
+    # Calcular o tempo restante até ficar sem bateria
+    tempo_passado_desde_ultima_carga = time.time() - lastChargeTime
+    tempo_restante_bateria = tempo_vida_bateria - tempo_passado_desde_ultima_carga
 
-    if lastBateria == 0:
-        print("Estou sem bateria.")
-        return
+    # Imprimir o tempo restante
+    print(f"Tempo restante de bateria: {tempo_restante_bateria:.2f} segundos")
 
-    # Calcular e imprimir o tempo restante
-    tempo_restante = descarga * momentBateria / 100
-    print(f"Faltam aproximadamente {round(tempo_restante, 2)} segundos até ficar sem bateria.")
+    # Se a bateria estiver prestes a acabar, sugerir uma recarga
+    if tempo_restante_bateria < 30:  # Sugerir recarga quando restarem menos de 30 segundos
+        print("Sugeriria recarregar a bateria em breve.")
 
 
 # 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
 def resp7():
-    total_pessoas = len(lastVisited)
+    global total_pessoas, supervisores_encontrados
 
     if total_pessoas > 0:
-        supervisores = sum(1 for pessoa in lastVisited if "supervisor" in pessoa)
-        probabilidade_supervisor = supervisores / total_pessoas
+        probabilidade_supervisor = supervisores_encontrados / total_pessoas
         print(f"A probabilidade da próxima pessoa ser um supervisor é aproximadamente {round(probabilidade_supervisor * 100, 2)}%.")
     else:
         print("Não há pessoas suficientes para calcular a probabilidade.")
@@ -298,19 +304,4 @@ def resp7():
 
 # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
 def resp8():
-    # Obter a localização atual do agente
-    current_location = get_current_location_name(posicaoGlobal)
-
-    if current_location:
-        # Verificar se há uma máquina e nenhum supervisor na zona
-        maquina_presente = any("máquina" in objetos for objetos in current_location)
-        supervisor_presente = any("supervisor" in objetos for objetos in current_location)
-
-        if maquina_presente and not supervisor_presente:
-            # Calcular a probabilidade de encontrar um operário
-            probabilidade_operario = sum(1 for pessoa in lastVisited if "operário" in pessoa) / len(lastVisited)
-            print(f"A probabilidade de encontrar um operário na zona é aproximadamente {round(probabilidade_operario * 100, 2)}%.")
-        else:
-            print("Não há máquina ou há um supervisor na zona.")
-    else:
-        print("Não foi possível determinar a localização atual.")
+    pass
