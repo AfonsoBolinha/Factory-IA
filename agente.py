@@ -7,24 +7,24 @@ Afonso Martins, 45838
 # Imports
 import time
 import gender_guesser.detector as gender
-import heapq
+import networkx as nx
 
 # Definir os Corredores e as divisões
-corredor1 = [(30, 165), (135, 350), "corredor 1"]
-corredor2 = [(165, 165), (485, 185), "corredor 2"]
-corredor3 = [(30, 380), (500, 435), "corredor 3"]
-corredor4 = [(530, 215), (635, 435), "corredor 4"]
-divisao5 = [(30, 30), (135, 135), "multiusos 5"]
-divisao6 = [(180, 30), (285, 135), "multiusos 6"]
-divisao7 = [(330, 30), (485, 135), "multiusos 7"]
-divisao8 = [(530, 30), (770, 185), "multiusos 8"]
-divisao9 = [(665, 230), (770, 285), "multiusos 9"]
+corredor1 = [(30, 165), (135, 350), "corredor1"]
+corredor2 = [(165, 165), (485, 185), "corredor2"]
+corredor3 = [(30, 380), (500, 435), "corredor3"]
+corredor4 = [(530, 215), (635, 435), "corredor4"]
+divisao5 = [(30, 30), (135, 135), "multiusos5"]
+divisao6 = [(180, 30), (285, 135), "multiusos6"]
+divisao7 = [(330, 30), (485, 135), "multiusos7"]
+divisao8 = [(530, 30), (770, 185), "multiusos8"]
+divisao9 = [(665, 230), (770, 285), "multiusos9"]
 divisao10 = [(665, 330), (770, 385), "entrada da fábrica"]
-divisao11 = [(530, 465), (770, 570), "multiusos 11"]
-divisao12 = [(330, 465), (485, 570), "multiusos 12"]
-divisao13 = [(180, 465), (285, 570), "multiusos 13"]
-divisao14 = [(30, 465), (135, 570), "multiusos 14"]
-divisao15 = [(160, 230), (485, 335), "multiusos 15"]
+divisao11 = [(530, 465), (770, 570), "multiusos11"]
+divisao12 = [(330, 465), (485, 570), "multiusos12"]
+divisao13 = [(180, 465), (285, 570), "multiusos13"]
+divisao14 = [(30, 465), (135, 570), "multiusos14"]
+divisao15 = [(160, 230), (485, 335), "multiusos15"]
 
 # Definir todas as localizações
 all_locations = [corredor1, corredor2, corredor3, corredor4,
@@ -34,6 +34,34 @@ all_locations = [corredor1, corredor2, corredor3, corredor4,
 
 # Definir as zonas
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
+
+
+def criar_grafo():
+    # Definir as conexões entre as áreas
+    conexoes = {
+        "corredor1": ["corredor2", "corredor3", divisao5[2]],
+        "corredor2": ["corredor1", divisao6[2], divisao7[2]],
+        "corredor3": ["corredor4", divisao14[2], divisao13[2], divisao12[2]],
+        "corredor4": ["corredor3", divisao11[2], divisao10[2], divisao9[2], divisao8[2]],
+        divisao5[2]: ["corredor1"],
+        divisao6[2]: ["corredor2"],
+        divisao7[2]: ["corredor2"],
+        divisao8[2]: ["corredor4"],
+        divisao9[2]: ["corredor4"],
+        divisao10[2]: ["corredor4"],
+        divisao11[2]: ["corredor4"],
+        divisao12[2]: ["corredor3"],
+        divisao13[2]: ["corredor3"],
+        divisao14[2]: ["corredor3"],
+        divisao15[2]: ["corredor1"]
+    }
+
+    grafo = nx.Graph()
+    for key, value in conexoes.items():
+        grafo.add_node(key)
+        for v in value:
+            grafo.add_edge(key, v)
+    return grafo
 
 # Definir as variáveis globais
 lastVisited = []
@@ -46,90 +74,15 @@ striped = ""
 lastTimeChecked = time.time()
 
 
-# Saber a localização atual, com base na posição do agente
-def get_current_location(position):
+# Saber o nome da divisão atual, com base na posição do agente
+def get_current_location_name(position):
     for start, end, nome in all_locations:
         if start[0] <= position[0] <= end[0] and start[1] <= position[1] <= end[1]:
             return nome
     return ""
 
 
-def heuristic(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-
-def build_graph(locations):
-    graph = {}
-
-    for start, end, _ in locations:
-        if start not in graph:
-            graph[start] = []
-        if end not in graph:
-            graph[end] = []
-
-        graph[start].append((end, 1))
-        graph[end].append((start, 1))
-
-    return graph
-
-
-def find_path(graph, start, goal, locations):
-    frontier = []
-    heapq.heappush(frontier, (0, start))
-
-    came_from = {}
-    cost_so_far = {}
-
-    came_from[start] = None
-    cost_so_far[start] = 0
-
-    goal_location = locations[goal]
-
-    while frontier:
-        _, current = heapq.heappop(frontier)
-
-        if current == goal:
-            break
-
-        current_location_index = None
-        for i, (start, end, nome) in enumerate(locations):
-            if start[0] == current[0] and start[1] == current[1] and end[0] == current[0] and end[1] == current[1]:
-                current_location_index = i
-                break
-
-        if current_location_index is None:
-            continue
-
-        current_location = locations[current_location_index]
-
-        if current_location not in graph:
-            continue
-
-        for next, cost in graph[current_location]:
-            new_cost = cost_so_far[current] + cost
-
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                priority = new_cost + heuristic(goal_location[0], next)
-                heapq.heappush(frontier, (priority, next))
-                came_from[next] = current
-
-    if goal not in came_from:
-        return None
-
-    path = []
-    current = goal
-
-    while current != start:
-        path.append(current)
-        current = came_from[current]
-
-    path.append(start)
-    path.reverse()
-
-    return path
-
-
+# 1. Qual foi a penúltima pessoa do sexo masculino que viste?
 def pergunta1(objetos):
     if len(objetos) == 1 and time.time() - lastTimeChecked > 1:
         if ("visitante" in objetos[0]) or ("supervisor" in objetos[0]) or ("operário" in objetos[0]):
@@ -152,6 +105,7 @@ def pergunta1(objetos):
                     lastVisited.append(striped)
 
 
+# 2. Em que tipo de zona estás agora?
 def pergunta2(objetos):
     global lastZone, zonas
     if len(objetos) == 1:
@@ -164,13 +118,8 @@ def pergunta2(objetos):
                     lastZone.append(zona)
 
 
-def pergunta3():
-    # 3. Qual o caminho para a zona de empacotamento?
-    pass
-
-
 def work(posicao, bateria, objetos):
-    # esta função é invocada em cada ciclo de clock
+    # Esta função é invocada em cada ciclo de clock
     # e pode servir para armazenar informação recolhida pelo agente
     # recebe:
     # posicao = a posição atual do agente, uma lista [X,Y]
@@ -185,109 +134,137 @@ def work(posicao, bateria, objetos):
     global posicaoGlobal
     posicaoGlobal = posicao
 
-    # 1
     pergunta1(objetos)
 
-    # 2
     pergunta2(objetos)
     if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [corredor1, corredor2, corredor3, corredor4]):
         lastZone.clear()
 
 
+# 1. Qual foi a penúltima pessoa do sexo masculino que viste?
 def resp1():
-    # 1. Qual foi a penúltima pessoa do sexo masculino que viste?
     if len(lastVisited) == 2:
         print("A penúltima pessoa foi o " + lastVisited[0] + ".")
     else:
         print("Não há penúltima pessoa.")
 
 
+# 2. Em que zona te encontras?
 def resp2():
-    # 2. Em que zona te encontras?
-    current_location = get_current_location(posicaoGlobal)
+    current_location_name = get_current_location_name(posicaoGlobal)
 
-    if current_location:
+    if current_location_name:
         if len(lastZone) == 1:
-            current_location = lastZone[0]
+            current_location_name = lastZone[0]
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao5]):
-                divisao5[2] = current_location
+                divisao5[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao6]):
-                divisao6[2] = current_location
+                divisao6[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao7]):
-                divisao7[2] = current_location
+                divisao7[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao8]):
-                divisao8[2] = current_location
+                divisao8[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao9]):
-                divisao9[2] = current_location
+                divisao9[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao10]):
-                divisao10[2] = current_location
+                divisao10[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao11]):
-                divisao11[2] = current_location
+                divisao11[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao12]):
-                divisao12[2] = current_location
+                divisao12[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao13]):
-                divisao13[2] = current_location
+                divisao13[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao14]):
-                divisao14[2] = current_location
+                divisao14[2] = current_location_name
             if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [divisao15]):
-                divisao15[2] = current_location
+                divisao15[2] = current_location_name
 
-    print(f"Estou na/no {current_location}.")
+    print(f"Estou na/no {current_location_name}.")
 
 
+# 3. Qual o caminho para a zona de empacotamento?
 def resp3():
-    empacotamento_location = "empacotamento"
-    current_location = get_current_location(posicaoGlobal)
+    # Obter a localização atual do agente
+    current_location_name = get_current_location_name(posicaoGlobal)
 
-    if empacotamento_location not in [nome for _, _, nome in all_locations]:
-        print("Ainda não sei onde se encontra a zona de empacotamento.")
+    # Atualizar o grafo
+    graph1 = criar_grafo()
+
+    if not any("empacotamento" in zona for zona in graph1.nodes):
+        print("Ainda não conheço a zona de empacotamento.")
         return
 
-    if current_location:
-        if current_location != empacotamento_location:
-            graph = build_graph(all_locations)
+    if current_location_name == "empacotamento":
+        print("Já estou na zona de empacotamento.")
+        return
 
-            # Encontrar os índices de current_location e empacotamento_location
-            current_index = [i for i, (_, _, nome) in enumerate(all_locations) if nome == current_location]
-            goal_index = [i for i, (_, _, nome) in enumerate(all_locations) if nome == empacotamento_location]
+    if current_location_name:
+        # Obter o caminho para a zona de empacotamento
+        caminho = nx.shortest_path(graph1, current_location_name, "empacotamento")
 
-            print(f"Current Index: {current_index}")
-            print(f"Goal Index: {goal_index}")
-
-            if current_index and goal_index:
-                # Use o primeiro elemento das listas, já que deve haver apenas uma correspondência
-                current_index = current_index[0]
-                goal_index = goal_index[0]
-
-                print(f"Current Index: {current_index}")
-                print(f"Goal Index: {goal_index}")
-
-                # Adicionar o argumento locations à chamada da função
-                path = find_path(graph, current_location, goal_index, all_locations)
-
-                if path:
-                    print(f"Caminho para a zona de empacotamento: {path}")
-                else:
-                    print("Não foi possível encontrar um caminho para a zona de empacotamento.")
-            else:
-                print("Erro ao obter os índices das localizações.")
-        else:
-            print("Já estou na zona de empacotamento.")
+        # Imprimir o caminho para a zona de empacotamento
+        print(f"O caminho para a zona de empacotamento é: {caminho}")
     else:
-        print("Não consigo determinar a localização atual.")
+        print("Não foi possível determinar a localização atual.")
 
 
 
+
+# 4. Qual a distância até ao laboratório?
 def resp4():
-    pass
+    # Obter a localização atual do agente
+    current_location_name = get_current_location_name(posicaoGlobal)
+
+    # Atualizar o grafo
+    graph2 = criar_grafo()
+
+    if not any("laboratório" in zona for zona in graph2.nodes):
+        print("Ainda não conheço o laboratório.")
+        return
+
+    if current_location_name == "laboratório":
+        print("Já estou no laboratório.")
+        return
+
+    if current_location_name:
+        # Obter a distância até ao laboratório
+        distancia = nx.shortest_path_length(graph2, current_location_name, "laboratório")
+
+        # Imprimir a distância até ao laboratório
+        print(f"A distância até ao laboratório é de {distancia} divisões.")
+    else:
+        print("Não foi possível determinar a localização atual.")
 
 
+# 5. Quanto tempo achas que demoras a ir de onde estás até ao escritório?
 def resp5():
-    pass
+    # Obter a localização atual do agente
+    current_location_name = get_current_location_name(posicaoGlobal)
+
+    # Atualizar o grafo
+    graph3 = criar_grafo()
+
+    if not any("escritório" in zona for zona in graph3.nodes):
+        print("Ainda não conheço o escritório.")
+        return
+
+    if current_location_name == "escritório":
+        print("Já estou no escritório.")
+        return
+
+    if current_location_name:
+        # Obter o caminho para o escritório
+        caminho = nx.shortest_path(graph3, current_location_name, "escritório")
+
+        # Calcular e imprimir o tempo até ao escritório
+        tempo = len(caminho) * 2
+        print(f"O tempo até ao escritório é de {tempo} segundos.")
+    else:
+        print("Não foi possível determinar a localização atual.")
 
 
+# 6. Quanto tempo achas que falta até ficares sem bateria?
 def resp6():
-    # 6. Quanto tempo achas que falta até ficares sem bateria?
     global lastTime
     global lastBateria
 
@@ -298,13 +275,17 @@ def resp6():
     lastTime = time.time()
     lastBateria = momentBateria
 
+    if lastBateria == 0:
+        print("Estou sem bateria.")
+        return
+
     # Calcular e imprimir o tempo restante
     tempo_restante = descarga * momentBateria / 100
     print(f"Faltam aproximadamente {round(tempo_restante, 2)} segundos até ficar sem bateria.")
 
 
+# 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
 def resp7():
-    # 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
     total_pessoas = len(lastVisited)
 
     if total_pessoas > 0:
@@ -315,11 +296,10 @@ def resp7():
         print("Não há pessoas suficientes para calcular a probabilidade.")
 
 
-
+# 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
 def resp8():
-    # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
     # Obter a localização atual do agente
-    current_location = get_current_location(posicaoGlobal)
+    current_location = get_current_location_name(posicaoGlobal)
 
     if current_location:
         # Verificar se há uma máquina e nenhum supervisor na zona
