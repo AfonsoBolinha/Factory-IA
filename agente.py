@@ -4,12 +4,11 @@ agente.py
 Diogo Ferreira, 46198
 Afonso Martins, 45838
 """
-import gettext
 # Importar as bibliotecas necessárias
-import random
 import time
 import gender_guesser.detector as gender
 import networkx as nx
+
 
 # Definir os Corredores e as divisões
 corredor1 = [(30, 165), (135, 350), "corredor1"]
@@ -28,14 +27,17 @@ divisao13 = [(180, 465), (285, 570), "multiusos13"]
 divisao14 = [(30, 465), (135, 570), "multiusos14"]
 divisao15 = [(160, 230), (485, 335), "multiusos15"]
 
+
 # Definir todas as localizações
 all_locations = [corredor1, corredor2, corredor3, corredor4,
                      divisao5, divisao6, divisao7, divisao8,
                      divisao9, divisao10, divisao11, divisao12,
                      divisao13, divisao14, divisao15]
 
+
 # Definir as zonas
 zonas = ["teste", "montagem", "inspeção", "escritório", "empacotamento", "laboratório"]
+
 
 # Definir as variáveis globais
 lastVisited = []
@@ -50,6 +52,10 @@ momentBateria = 100
 total_pessoas_lista = []
 total_pessoas = 0
 supervisores_encontrados = 0
+operarios_encontrados = 0
+total_maquinas_lista = []
+total_maquinas = 0
+
 
 # Função para saber o nome da divisão atual, com base na posição do agente
 def get_current_location_name(position):
@@ -57,6 +63,7 @@ def get_current_location_name(position):
         if start[0] <= position[0] <= end[0] and start[1] <= position[1] <= end[1]:
             return nome
     return ""
+
 
 # Função para criar/atualizar o grafo e as suas conexões
 def criar_grafo():
@@ -79,6 +86,7 @@ def criar_grafo():
         divisao15[2]: ["corredor1"]
     }
 
+    # Criar o grafo
     grafo = nx.Graph()
     for key, value in conexoes.items():
         grafo.add_node(key)
@@ -86,10 +94,12 @@ def criar_grafo():
             grafo.add_edge(key, v)
     return grafo
 
+
 # Função para atualizar o momento da última carga da bateria
 def update_last_charge_time():
     global lastChargeTime
     lastChargeTime = time.time()
+
 
 # Função para guardar a penúltima pessoa do sexo masculino que o agente viu
 def pergunta1(objetos):
@@ -102,7 +112,9 @@ def pergunta1(objetos):
                 striped = objetos[0].replace("operário_", "")
             if "supervisor" in objetos[0]:
                 striped = objetos[0].replace("supervisor_", "")
-            if (striped, "female") in nomes_genero:
+            if (striped, "female") in nomes_genero or (striped, "mostly_female") in nomes_genero:
+                return
+            if (striped, "unknown") in nomes_genero:
                 return
             if (striped, "male") in nomes_genero or (striped, "mostly_male") in nomes_genero:
                 if len(lastVisited) == 2:
@@ -119,6 +131,7 @@ def pergunta1(objetos):
                 what_gender = gender.Detector().get_gender(name=striped, country="portugal")
                 nomes_genero.append((striped, what_gender))
 
+
 # Função para guardar a última zona onde o agente esteve
 def pergunta2(objetos):
     global lastZone, zonas
@@ -131,22 +144,40 @@ def pergunta2(objetos):
                 else:
                     lastZone.append(zona)
 
+
 # Função para guardar o número de pessoas diferentes que o agente viu
 def pergunta7(objetos):
-    global total_pessoas_lista, total_pessoas, supervisores_encontrados
-    temp = 0
+    global total_pessoas_lista, total_pessoas, supervisores_encontrados, operarios_encontrados
+    temp1 = 0
+    temp2 = 0
     if len(objetos) == 1:
-        if objetos[0] not in total_pessoas_lista:
+        if objetos[0] not in total_pessoas_lista and (objetos[0].startswith(("supervisor", "operário", "visitante"))):
             total_pessoas_lista.append(objetos[0])
 
     for i in total_pessoas_lista:
         if "supervisor" in i:
-            temp += 1
+            temp1 += 1
 
-    supervisores_encontrados = temp
+    for i in total_pessoas_lista:
+        if "operário" in i:
+            temp2 += 1
+
+    supervisores_encontrados = temp1
+    operarios_encontrados = temp2
     total_pessoas = len(total_pessoas_lista)
 
 
+# Função para guardar o número de máquinas que o agente viu
+def pergunta8(objetos):
+    global total_maquinas_lista, total_maquinas
+    if len(objetos) == 1:
+        if objetos[0] not in total_maquinas_lista and (objetos[0].startswith("máquina")):
+            total_maquinas_lista.append(objetos[0])
+
+    total_maquinas = len(total_maquinas_lista)
+
+
+# Função principal
 def work(posicao, bateria, objetos):
     # Esta função é invocada em cada ciclo de clock
     # e pode servir para armazenar informação recolhida pelo agente
@@ -157,15 +188,24 @@ def work(posicao, bateria, objetos):
     # podem achar o tempo atual usando, p.ex.
     # time.time()
 
+    # Variáveis globais, para serem usadas em outras funções
     global posicaoGlobal, momentBateria, striped
+
+    # Atualizar as variáveis globais
     momentBateria = bateria
     posicaoGlobal = posicao
+
+    # Chamar as funções para as respetivas perguntas
     pergunta1(objetos)
     pergunta2(objetos)
     pergunta7(objetos)
+    pergunta8(objetos)
+
+    # Limpar a última zona se o agente sair dela, ou seja, quando vai para um corredor (para a pergunta 2)
     if any(start[0] <= posicaoGlobal[0] <= end[0] and start[1] <= posicaoGlobal[1] <= end[1] for start, end, nome in [corredor1, corredor2, corredor3, corredor4]):
         lastZone.clear()
 
+    # Atualizar o momento da última carga da bateria
     if momentBateria == 100:
         update_last_charge_time()
 
@@ -213,7 +253,6 @@ def resp3():
         # Obter o caminho para a zona de empacotamento
         caminho = nx.shortest_path(graph1, current_location_name, "empacotamento")
 
-        # Imprimir o caminho para a zona de empacotamento
         print(f"O caminho para a zona de empacotamento é: {caminho}")
     else:
         print("Não foi possível determinar a localização atual.")
@@ -239,7 +278,6 @@ def resp4():
         # Obter a distância até ao laboratório
         distancia = nx.shortest_path_length(graph2, current_location_name, "laboratório")
 
-        # Imprimir a distância até ao laboratório
         print(f"A distância até ao laboratório é de {distancia} divisões.")
     else:
         print("Não foi possível determinar a localização atual.")
@@ -265,9 +303,9 @@ def resp5():
         # Obter o caminho para o escritório
         caminho = nx.shortest_path(graph3, current_location_name, "escritório")
 
-        # Calcular e imprimir o tempo até ao escritório
+        # Calcular o tempo até ao escritório (2 segundos por divisão, aproximadamente)
         tempo = len(caminho) * 2
-        print(f"O tempo até ao escritório é de aproximadamente {(tempo - 2 - random.uniform(-0.1, 0.1)):.2f} segundos.")
+        print(f"O tempo até ao escritório é de aproximadamente {(tempo - 3)} segundos.")
     else:
         print("Não foi possível determinar a localização atual.")
 
@@ -283,12 +321,11 @@ def resp6():
     tempo_passado_desde_ultima_carga = time.time() - lastChargeTime
     tempo_restante_bateria = tempo_vida_bateria - tempo_passado_desde_ultima_carga
 
-    # Imprimir o tempo restante
     print(f"Tempo restante de bateria: {tempo_restante_bateria:.2f} segundos")
 
-    # Se a bateria estiver prestes a acabar, sugerir uma recarga
-    if tempo_restante_bateria < 30:  # Sugerir recarga quando restarem menos de 30 segundos
-        print("Sugeriria recarregar a bateria em breve.")
+    # Se a bateria estiver prestes a acabar, sugerir carregar novamente
+    if tempo_restante_bateria < 30:
+        print("Devia ir carregar a bateria em breve.")
 
 
 # 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
@@ -304,5 +341,15 @@ def resp7():
 
 # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
 def resp8():
-    print("14.693%")
-    pass
+    # Definir probabilidades da tabela
+    probabilidade_supervisor_dado_maquina_e_operario = 0.8
+    probabilidade_supervisor_dado_maquina_sem_operario = 0.2
+    probabilidade_supervisor_dado_sem_maquina_e_operario = 0.5
+    probabilidade_supervisor_dado_sem_maquina_sem_operario = 0.1
+
+    # Calcular a probabilidade de encontrar um operário numa zona com uma máquina, mas sem supervisor
+    probabilidade_operario_sem_supervisor_com_maquina = 1 - probabilidade_supervisor_dado_maquina_sem_operario
+
+    # Imprimir a probabilidade
+    print(
+        f"A probabilidade de encontrar um operário numa zona com uma máquina, mas sem supervisor é aproximadamente {round(probabilidade_operario_sem_supervisor_com_maquina * 100, 2)}%.")
