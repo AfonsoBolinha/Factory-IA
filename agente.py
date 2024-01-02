@@ -341,15 +341,16 @@ def resp7():
 
 # 8. Qual é a probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor?
 def resp8():
-    # Definir probabilidades da tabela
-    probabilidade_supervisor_dado_maquina_e_operario = 0.8
-    probabilidade_supervisor_dado_maquina_sem_operario = 0.2
-    probabilidade_supervisor_dado_sem_maquina_e_operario = 0.5
-    probabilidade_supervisor_dado_sem_maquina_sem_operario = 0.1
+    global total_maquinas, total_pessoas, supervisores_encontrados, operarios_encontrados
 
-    # Calcular a probabilidade de encontrar um operário numa zona com uma máquina, mas sem supervisor
-    probabilidade_operario_sem_supervisor_com_maquina = 1 - probabilidade_supervisor_dado_maquina_sem_operario
+    if total_maquinas > 0 and total_pessoas > 0:
+        probabilidade_operario = operarios_encontrados / total_pessoas
+        probabilidade_supervisor = supervisores_encontrados / total_pessoas
+        probabilidade_maquina = total_maquinas / total_pessoas
 
-    # Imprimir a probabilidade
-    print(
-        f"A probabilidade de encontrar um operário numa zona com uma máquina, mas sem supervisor é aproximadamente {round(probabilidade_operario_sem_supervisor_com_maquina * 100, 2)}%.")
+        probabilidade = probabilidade_operario * (1 - probabilidade_supervisor) * probabilidade_maquina
+        print(f"A probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor é aproximadamente {round(probabilidade * 100, 2)}%.")
+    elif total_maquinas > 0 and total_pessoas == 0:
+        print("Não há pessoas suficientes para calcular a probabilidade.")
+    elif total_maquinas == 0:
+        print("Não há máquinas suficientes para calcular a probabilidade.")
