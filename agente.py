@@ -321,11 +321,13 @@ def resp6():
     tempo_passado_desde_ultima_carga = time.time() - lastChargeTime
     tempo_restante_bateria = tempo_vida_bateria - tempo_passado_desde_ultima_carga
 
-    print(f"Tempo restante de bateria: {tempo_restante_bateria:.2f} segundos")
-
-    # Se a bateria estiver prestes a acabar, sugerir carregar novamente
-    if tempo_restante_bateria < 30:
-        print("Devia ir carregar a bateria em breve.")
+    if momentBateria == 0:
+        print("A bateria acabou.")
+    else:
+        print(f"Tempo restante de bateria: {tempo_restante_bateria:.2f} segundos")
+        # Se a bateria estiver prestes a acabar, sugerir carregar novamente
+        if tempo_restante_bateria < 30:
+            print("Devia ir carregar a bateria em breve.")
 
 
 # 7. Qual é a probabilidade da próxima pessoa a encontrares ser um supervisor?
