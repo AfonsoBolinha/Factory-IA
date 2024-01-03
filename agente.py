@@ -348,7 +348,9 @@ def resp8():
     if total_maquinas > 0 and total_pessoas > 0:
         probabilidade_operario = operarios_encontrados / total_pessoas
         probabilidade_supervisor = supervisores_encontrados / total_pessoas
-        probabilidade_maquina = total_maquinas / total_pessoas
+
+        total_todos = total_maquinas + total_pessoas
+        probabilidade_maquina = total_maquinas / total_todos
 
         probabilidade = probabilidade_operario * (1 - probabilidade_supervisor) * probabilidade_maquina
         print(f"A probabilidade de encontrar um operário numa zona se estiver lá uma máquina mas não estiver lá um supervisor é aproximadamente {round(probabilidade * 100, 2)}%.")
